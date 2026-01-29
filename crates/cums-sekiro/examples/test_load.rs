@@ -1,4 +1,4 @@
-use cums_sekiro::{rebuild_ogg, FsbBank, Encryption};
+use cums_sekiro::{rebuild_ogg, Encryption, FsbBank};
 use std::io::Write;
 
 fn main() {

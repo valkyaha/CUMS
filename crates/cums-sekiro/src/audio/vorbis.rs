@@ -47,16 +47,18 @@ impl<'a> Iterator for VorbisPacketIterator<'a> {
     type Item = &'a [u8];
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.position + 2 > self.data.len() { return None; }
+        if self.position + 2 > self.data.len() {
+            return None;
+        }
 
-        let size = u16::from_le_bytes([
-            self.data[self.position],
-            self.data[self.position + 1],
-        ]) as usize;
+        let size =
+            u16::from_le_bytes([self.data[self.position], self.data[self.position + 1]]) as usize;
 
         self.position += 2;
 
-        if size == 0 || self.position + size > self.data.len() { return None; }
+        if size == 0 || self.position + size > self.data.len() {
+            return None;
+        }
 
         let packet = &self.data[self.position..self.position + size];
         self.position += size;
@@ -77,20 +79,32 @@ pub fn build_ogg_file(
     {
         let mut writer = PacketWriter::new(&mut output);
 
-        writer.write_packet(
-            headers.id_header.clone(), serial,
-            ogg::writing::PacketWriteEndInfo::EndPage, 0,
-        ).map_err(|e| format!("Failed to write id header: {}", e))?;
+        writer
+            .write_packet(
+                headers.id_header.clone(),
+                serial,
+                ogg::writing::PacketWriteEndInfo::EndPage,
+                0,
+            )
+            .map_err(|e| format!("Failed to write id header: {}", e))?;
 
-        writer.write_packet(
-            headers.comment_header.clone(), serial,
-            ogg::writing::PacketWriteEndInfo::NormalPacket, 0,
-        ).map_err(|e| format!("Failed to write comment header: {}", e))?;
+        writer
+            .write_packet(
+                headers.comment_header.clone(),
+                serial,
+                ogg::writing::PacketWriteEndInfo::NormalPacket,
+                0,
+            )
+            .map_err(|e| format!("Failed to write comment header: {}", e))?;
 
-        writer.write_packet(
-            headers.setup_header.clone(), serial,
-            ogg::writing::PacketWriteEndInfo::EndPage, 0,
-        ).map_err(|e| format!("Failed to write setup header: {}", e))?;
+        writer
+            .write_packet(
+                headers.setup_header.clone(),
+                serial,
+                ogg::writing::PacketWriteEndInfo::EndPage,
+                0,
+            )
+            .map_err(|e| format!("Failed to write setup header: {}", e))?;
 
         let mut granule_pos = 0u64;
         let mut packet_count = 0u32;
@@ -104,13 +118,14 @@ pub fn build_ogg_file(
             let is_last = i == total_packets - 1;
             let end_info = if is_last {
                 ogg::writing::PacketWriteEndInfo::EndStream
-            } else if packet_count % 10 == 0 {
+            } else if packet_count.is_multiple_of(10) {
                 ogg::writing::PacketWriteEndInfo::EndPage
             } else {
                 ogg::writing::PacketWriteEndInfo::NormalPacket
             };
 
-            writer.write_packet(packet.to_vec(), serial, end_info, granule_pos)
+            writer
+                .write_packet(packet.to_vec(), serial, end_info, granule_pos)
                 .map_err(|e| format!("Failed to write audio packet: {}", e))?;
         }
     }
@@ -123,7 +138,9 @@ pub fn get_vorbis_info(_data: &[u8]) -> Option<(u32, u32)> {
 }
 
 pub fn has_valid_vorbis_packets(data: &[u8]) -> bool {
-    if data.len() < 2 { return false; }
+    if data.len() < 2 {
+        return false;
+    }
     let size = u16::from_le_bytes([data[0], data[1]]) as usize;
     size > 0 && size + 2 <= data.len()
 }

@@ -1,4 +1,4 @@
-use cums_sekiro::{FsbBank, Encryption};
+use cums_sekiro::{Encryption, FsbBank};
 
 fn main() {
     let path = r"G:\SteamLibrary\steamapps\common\Dark Souls II Scholar of the First Sin\Game\sound\frpg2_ps100200.fsb";
@@ -12,7 +12,10 @@ fn main() {
             println!("  Codec: {:?}", bank.codec);
             println!("  Encrypted: {}", bank.encryption != Encryption::None);
             for (i, s) in bank.samples.iter().take(5).enumerate() {
-                println!("  Sample {}: {:?} - {}Hz {}ch", i, s.name, s.frequency, s.channels);
+                println!(
+                    "  Sample {}: {:?} - {}Hz {}ch",
+                    i, s.name, s.frequency, s.channels
+                );
             }
         }
         Err(e) => {

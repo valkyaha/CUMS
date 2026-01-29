@@ -31,7 +31,10 @@ impl Bnd4 {
         let mut magic = [0u8; 4];
         cursor.read_exact(&mut magic)?;
         if &magic != BND4_MAGIC {
-            return Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid BND4 magic"));
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Invalid BND4 magic",
+            ));
         }
 
         let flag1 = cursor.read_u8()?;
@@ -44,22 +47,38 @@ impl Bnd4 {
 
         macro_rules! read_u32 {
             ($cursor:expr, $be:expr) => {
-                if $be { $cursor.read_u32::<BigEndian>()? } else { $cursor.read_u32::<LittleEndian>()? }
+                if $be {
+                    $cursor.read_u32::<BigEndian>()?
+                } else {
+                    $cursor.read_u32::<LittleEndian>()?
+                }
             };
         }
         macro_rules! read_i32 {
             ($cursor:expr, $be:expr) => {
-                if $be { $cursor.read_i32::<BigEndian>()? } else { $cursor.read_i32::<LittleEndian>()? }
+                if $be {
+                    $cursor.read_i32::<BigEndian>()?
+                } else {
+                    $cursor.read_i32::<LittleEndian>()?
+                }
             };
         }
         macro_rules! read_u64 {
             ($cursor:expr, $be:expr) => {
-                if $be { $cursor.read_u64::<BigEndian>()? } else { $cursor.read_u64::<LittleEndian>()? }
+                if $be {
+                    $cursor.read_u64::<BigEndian>()?
+                } else {
+                    $cursor.read_u64::<LittleEndian>()?
+                }
             };
         }
         macro_rules! read_i64 {
             ($cursor:expr, $be:expr) => {
-                if $be { $cursor.read_i64::<BigEndian>()? } else { $cursor.read_i64::<LittleEndian>()? }
+                if $be {
+                    $cursor.read_i64::<BigEndian>()?
+                } else {
+                    $cursor.read_i64::<LittleEndian>()?
+                }
             };
         }
 
@@ -68,7 +87,9 @@ impl Bnd4 {
 
         let mut version_bytes = [0u8; 8];
         cursor.read_exact(&mut version_bytes)?;
-        let version = String::from_utf8_lossy(&version_bytes).trim_end_matches('\0').to_string();
+        let version = String::from_utf8_lossy(&version_bytes)
+            .trim_end_matches('\0')
+            .to_string();
 
         let _entry_header_size = read_u64!(cursor, big_endian);
         let _data_offset = read_u64!(cursor, big_endian);
@@ -135,7 +156,15 @@ impl Bnd4 {
             });
         }
 
-        Ok(Bnd4 { version, flags: flag2, big_endian, bit_big_endian, unicode, extended, entries })
+        Ok(Bnd4 {
+            version,
+            flags: flag2,
+            big_endian,
+            bit_big_endian,
+            unicode,
+            extended,
+            entries,
+        })
     }
 
     pub fn write(&self) -> io::Result<Vec<u8>> {
@@ -144,7 +173,8 @@ impl Bnd4 {
 
         cursor.write_all(BND4_MAGIC)?;
 
-        let flag1 = if self.big_endian { 0x01 } else { 0x00 } | if self.bit_big_endian { 0x80 } else { 0x00 };
+        let flag1 = if self.big_endian { 0x01 } else { 0x00 }
+            | if self.bit_big_endian { 0x80 } else { 0x00 };
         cursor.write_u8(flag1)?;
         cursor.write_u8(self.flags)?;
         cursor.write_u8(0)?;
@@ -152,22 +182,38 @@ impl Bnd4 {
 
         macro_rules! write_u32 {
             ($cursor:expr, $val:expr, $be:expr) => {
-                if $be { $cursor.write_u32::<BigEndian>($val)? } else { $cursor.write_u32::<LittleEndian>($val)? }
+                if $be {
+                    $cursor.write_u32::<BigEndian>($val)?
+                } else {
+                    $cursor.write_u32::<LittleEndian>($val)?
+                }
             };
         }
         macro_rules! write_i32 {
             ($cursor:expr, $val:expr, $be:expr) => {
-                if $be { $cursor.write_i32::<BigEndian>($val)? } else { $cursor.write_i32::<LittleEndian>($val)? }
+                if $be {
+                    $cursor.write_i32::<BigEndian>($val)?
+                } else {
+                    $cursor.write_i32::<LittleEndian>($val)?
+                }
             };
         }
         macro_rules! write_u64 {
             ($cursor:expr, $val:expr, $be:expr) => {
-                if $be { $cursor.write_u64::<BigEndian>($val)? } else { $cursor.write_u64::<LittleEndian>($val)? }
+                if $be {
+                    $cursor.write_u64::<BigEndian>($val)?
+                } else {
+                    $cursor.write_u64::<LittleEndian>($val)?
+                }
             };
         }
         macro_rules! write_i64 {
             ($cursor:expr, $val:expr, $be:expr) => {
-                if $be { $cursor.write_i64::<BigEndian>($val)? } else { $cursor.write_i64::<LittleEndian>($val)? }
+                if $be {
+                    $cursor.write_i64::<BigEndian>($val)?
+                } else {
+                    $cursor.write_i64::<LittleEndian>($val)?
+                }
             };
         }
 
@@ -180,7 +226,8 @@ impl Bnd4 {
 
         let mut version_bytes = [0u8; 8];
         let version_src = self.version.as_bytes();
-        version_bytes[..version_src.len().min(8)].copy_from_slice(&version_src[..version_src.len().min(8)]);
+        version_bytes[..version_src.len().min(8)]
+            .copy_from_slice(&version_src[..version_src.len().min(8)]);
         cursor.write_all(&version_bytes)?;
 
         let entry_header_size = if self.extended == 0x10 { 36u64 } else { 24u64 };
@@ -264,7 +311,7 @@ impl Bnd4 {
         cursor.seek(SeekFrom::Start(data_offset_pos))?;
         write_u64!(cursor, data_start, be);
 
-        drop(cursor);
+        let _ = cursor; // End borrow
         output.resize(total_size as usize, 0);
 
         Ok(output)
@@ -283,7 +330,9 @@ fn read_string(cursor: &mut Cursor<&[u8]>) -> io::Result<String> {
     let mut bytes = Vec::new();
     loop {
         let b = cursor.read_u8()?;
-        if b == 0 { break; }
+        if b == 0 {
+            break;
+        }
         bytes.push(b);
     }
     Ok(String::from_utf8_lossy(&bytes).into_owned())
@@ -293,7 +342,9 @@ fn read_wide_string(cursor: &mut Cursor<&[u8]>) -> io::Result<String> {
     let mut chars = Vec::new();
     loop {
         let c = cursor.read_u16::<LittleEndian>()?;
-        if c == 0 { break; }
+        if c == 0 {
+            break;
+        }
         chars.push(c);
     }
     Ok(String::from_utf16_lossy(&chars))

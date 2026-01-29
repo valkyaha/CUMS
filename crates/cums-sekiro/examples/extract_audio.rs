@@ -1,8 +1,8 @@
+use cums_sekiro::{extract_mp3, rebuild_ogg, Codec, Encryption, FsbBank, Version};
 use std::env;
 use std::fs::{self, File};
 use std::io::Write;
 use std::path::Path;
-use cums_sekiro::{FsbBank, Codec, Version, Encryption, rebuild_ogg, extract_mp3};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
@@ -36,27 +36,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let name = sample.name.as_deref().unwrap_or(&default_name);
 
         let (audio_data, ext) = match (bank.version, bank.codec) {
-            (Version::Fsb5, Codec::Vorbis) => {
-                match rebuild_ogg(&bank, sample) {
-                    Ok(ogg) => (ogg, "ogg"),
-                    Err(e) => {
-                        println!("  Warning: Failed to rebuild OGG for {}: {}", name, e);
-                        (bank.sample_data(i)?.to_vec(), "vorbis_raw")
-                    }
+            (Version::Fsb5, Codec::Vorbis) => match rebuild_ogg(&bank, sample) {
+                Ok(ogg) => (ogg, "ogg"),
+                Err(e) => {
+                    println!("  Warning: Failed to rebuild OGG for {}: {}", name, e);
+                    (bank.sample_data(i)?.to_vec(), "vorbis_raw")
                 }
-            }
-            (_, Codec::Mpeg) => {
-                (extract_mp3(&bank, sample)?, "mp3")
-            }
-            _ => {
-                (bank.sample_data(i)?.to_vec(), "bin")
-            }
+            },
+            (_, Codec::Mpeg) => (extract_mp3(&bank, sample)?, "mp3"),
+            _ => (bank.sample_data(i)?.to_vec(), "bin"),
         };
 
         let output_path = Path::new(output_dir).join(format!("{}.{}", name, ext));
 
-        println!("  [{}/{}] {} - {} Hz, {} ch, {:.2}s -> {:?}",
-            i + 1, bank.samples.len(),
+        println!(
+            "  [{}/{}] {} - {} Hz, {} ch, {:.2}s -> {:?}",
+            i + 1,
+            bank.samples.len(),
             name,
             sample.frequency,
             sample.channels,

@@ -28,7 +28,7 @@ impl DcxType {
         }
     }
 
-    fn to_magic(&self) -> [u8; 4] {
+    fn as_magic(&self) -> [u8; 4] {
         match self {
             DcxType::None => *b"\0\0\0\0",
             DcxType::Zlib => *b"DFLT",
@@ -66,7 +66,10 @@ impl Dcx {
 
         cursor.read_exact(&mut magic)?;
         if &magic != DCS_MAGIC {
-            return Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid DCS magic"));
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Invalid DCS magic",
+            ));
         }
 
         let uncompressed_size = cursor.read_u32::<BigEndian>()?;
@@ -74,15 +77,21 @@ impl Dcx {
 
         cursor.read_exact(&mut magic)?;
         if &magic != DCP_MAGIC {
-            return Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid DCP magic"));
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Invalid DCP magic",
+            ));
         }
 
         let mut compression_magic = [0u8; 4];
         cursor.read_exact(&mut compression_magic)?;
 
-        let compression = DcxType::from_magic(&compression_magic)
-            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData,
-                format!("Unknown compression type: {:?}", compression_magic)))?;
+        let compression = DcxType::from_magic(&compression_magic).ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("Unknown compression type: {:?}", compression_magic),
+            )
+        })?;
 
         let _dcp_unk08 = cursor.read_u32::<BigEndian>()?;
         let _dcp_unk0c = cursor.read_u32::<BigEndian>()?;
@@ -129,7 +138,10 @@ impl Dcx {
             DcxType::None => compressed_data.to_vec(),
         };
 
-        Ok(Dcx { compression, data: decompressed })
+        Ok(Dcx {
+            compression,
+            data: decompressed,
+        })
     }
 
     pub fn compress(data: &[u8], compression: DcxType) -> io::Result<Vec<u8>> {
@@ -164,7 +176,7 @@ impl Dcx {
         cursor.write_u32::<BigEndian>(compressed_data.len() as u32)?;
 
         cursor.write_all(DCP_MAGIC)?;
-        cursor.write_all(&compression.to_magic())?;
+        cursor.write_all(&compression.as_magic())?;
         cursor.write_u32::<BigEndian>(0x20)?;
         cursor.write_u32::<BigEndian>(0x09)?;
         cursor.write_u32::<BigEndian>(0x00)?;
@@ -177,7 +189,7 @@ impl Dcx {
 
         cursor.write_all(&compressed_data)?;
 
-        drop(cursor);
+        let _ = cursor; // End borrow
         Ok(output)
     }
 

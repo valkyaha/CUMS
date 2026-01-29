@@ -54,8 +54,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     for (i, sample) in bank.samples.iter().enumerate() {
         if sample.vorbis_crc.is_some() || sample.loop_start.is_some() {
             println!("Sample {} {:?}:", i, sample.name);
-            println!("  Vorbis CRC: {:?}", sample.vorbis_crc.map(|c| format!("0x{:08X}", c)));
-            println!("  Seek table: {} entries", sample.vorbis_seek_table.as_ref().map(|t| t.len()).unwrap_or(0));
+            println!(
+                "  Vorbis CRC: {:?}",
+                sample.vorbis_crc.map(|c| format!("0x{:08X}", c))
+            );
+            println!(
+                "  Seek table: {} entries",
+                sample
+                    .vorbis_seek_table
+                    .as_ref()
+                    .map(|t| t.len())
+                    .unwrap_or(0)
+            );
             println!("  Loop: {:?} - {:?}", sample.loop_start, sample.loop_end);
             shown += 1;
             if shown >= 10 {

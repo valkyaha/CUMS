@@ -40,7 +40,10 @@ impl Bhd5 {
         let mut magic = [0u8; 4];
         cursor.read_exact(&mut magic)?;
         if &magic != BHD5_MAGIC {
-            return Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid BHD5 magic"));
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Invalid BHD5 magic",
+            ));
         }
 
         let endian_check = cursor.read_u32::<LittleEndian>()?;
@@ -48,22 +51,38 @@ impl Bhd5 {
 
         macro_rules! read_u32 {
             ($cursor:expr) => {
-                if big_endian { $cursor.read_u32::<BigEndian>()? } else { $cursor.read_u32::<LittleEndian>()? }
+                if big_endian {
+                    $cursor.read_u32::<BigEndian>()?
+                } else {
+                    $cursor.read_u32::<LittleEndian>()?
+                }
             };
         }
         macro_rules! read_i32 {
             ($cursor:expr) => {
-                if big_endian { $cursor.read_i32::<BigEndian>()? } else { $cursor.read_i32::<LittleEndian>()? }
+                if big_endian {
+                    $cursor.read_i32::<BigEndian>()?
+                } else {
+                    $cursor.read_i32::<LittleEndian>()?
+                }
             };
         }
         macro_rules! read_u64 {
             ($cursor:expr) => {
-                if big_endian { $cursor.read_u64::<BigEndian>()? } else { $cursor.read_u64::<LittleEndian>()? }
+                if big_endian {
+                    $cursor.read_u64::<BigEndian>()?
+                } else {
+                    $cursor.read_u64::<LittleEndian>()?
+                }
             };
         }
         macro_rules! read_i64 {
             ($cursor:expr) => {
-                if big_endian { $cursor.read_i64::<BigEndian>()? } else { $cursor.read_i64::<LittleEndian>()? }
+                if big_endian {
+                    $cursor.read_i64::<BigEndian>()?
+                } else {
+                    $cursor.read_i64::<LittleEndian>()?
+                }
             };
         }
 
@@ -130,19 +149,35 @@ impl Bhd5 {
                     cursor.seek(SeekFrom::Start(entry_pos))?;
                 }
 
-                entries.push(Bhd5Entry { hash, size, offset, padded_size, aes_key, aes_ranges });
+                entries.push(Bhd5Entry {
+                    hash,
+                    size,
+                    offset,
+                    padded_size,
+                    aes_key,
+                    aes_ranges,
+                });
             }
 
             cursor.seek(SeekFrom::Start(pos))?;
             buckets.push(Bhd5Bucket { entries });
         }
 
-        Ok(Bhd5 { version, salt, buckets, big_endian })
+        Ok(Bhd5 {
+            version,
+            salt,
+            buckets,
+            big_endian,
+        })
     }
 
     pub fn get_entry(&self, hash: u32) -> Option<&Bhd5Entry> {
         let bucket_index = (hash % self.buckets.len() as u32) as usize;
-        self.buckets.get(bucket_index)?.entries.iter().find(|e| e.hash == hash)
+        self.buckets
+            .get(bucket_index)?
+            .entries
+            .iter()
+            .find(|e| e.hash == hash)
     }
 
     pub fn all_entries(&self) -> Vec<&Bhd5Entry> {
@@ -179,7 +214,10 @@ impl<'a> Bdt<'a> {
         let end = start + entry.padded_size as usize;
 
         if end > self.data.len() {
-            return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "Entry data out of bounds"));
+            return Err(io::Error::new(
+                io::ErrorKind::UnexpectedEof,
+                "Entry data out of bounds",
+            ));
         }
 
         let mut data = self.data[start..end].to_vec();
@@ -196,7 +234,10 @@ impl<'a> Bdt<'a> {
 
 fn decrypt_aes128_ecb(data: &mut [u8], key: &[u8], ranges: &[(i64, i64)]) -> io::Result<()> {
     if key.len() != 16 {
-        return Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid AES key length"));
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "Invalid AES key length",
+        ));
     }
 
     let cipher = Aes128::new(GenericArray::from_slice(key));

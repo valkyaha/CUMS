@@ -1,38 +1,64 @@
+use crate::crypto::{self, FSB_KEY};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use std::fs::File;
 use std::io::{self, Cursor, Read, Seek, SeekFrom, Write};
 use std::path::Path;
 use std::process::Command;
-use crate::crypto::{self, FSB_KEY};
 
 const FSB4_MAGIC: &[u8; 4] = b"FSB4";
 const FSB5_MAGIC: &[u8; 4] = b"FSB5";
 const FSB5_HEADER_SIZE: usize = 60;
 const FREQUENCY_TABLE: [u32; 16] = [
-    4000, 8000, 11000, 11025, 16000, 22050, 24000, 32000,
-    44100, 48000, 96000, 192000, 0, 0, 0, 0,
+    4000, 8000, 11000, 11025, 16000, 22050, 24000, 32000, 44100, 48000, 96000, 192000, 0, 0, 0, 0,
 ];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Version { Fsb4, Fsb5 }
+pub enum Version {
+    Fsb4,
+    Fsb5,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
 pub enum Codec {
-    None = 0, Pcm8 = 1, Pcm16 = 2, Pcm24 = 3, Pcm32 = 4, PcmFloat = 5,
-    GcAdpcm = 6, ImaAdpcm = 7, Vag = 8, Hevag = 9, Xma = 10, Mpeg = 11,
-    Celt = 12, At9 = 13, Xwma = 14, Vorbis = 15,
+    None = 0,
+    Pcm8 = 1,
+    Pcm16 = 2,
+    Pcm24 = 3,
+    Pcm32 = 4,
+    PcmFloat = 5,
+    GcAdpcm = 6,
+    ImaAdpcm = 7,
+    Vag = 8,
+    Hevag = 9,
+    Xma = 10,
+    Mpeg = 11,
+    Celt = 12,
+    At9 = 13,
+    Xwma = 14,
+    Vorbis = 15,
 }
 
 impl Codec {
     pub fn from_u32(val: u32) -> Option<Self> {
         match val {
-            0 => Some(Self::None), 1 => Some(Self::Pcm8), 2 => Some(Self::Pcm16),
-            3 => Some(Self::Pcm24), 4 => Some(Self::Pcm32), 5 => Some(Self::PcmFloat),
-            6 => Some(Self::GcAdpcm), 7 => Some(Self::ImaAdpcm), 8 => Some(Self::Vag),
-            9 => Some(Self::Hevag), 10 => Some(Self::Xma), 11 => Some(Self::Mpeg),
-            12 => Some(Self::Celt), 13 => Some(Self::At9), 14 => Some(Self::Xwma),
-            15 => Some(Self::Vorbis), _ => None,
+            0 => Some(Self::None),
+            1 => Some(Self::Pcm8),
+            2 => Some(Self::Pcm16),
+            3 => Some(Self::Pcm24),
+            4 => Some(Self::Pcm32),
+            5 => Some(Self::PcmFloat),
+            6 => Some(Self::GcAdpcm),
+            7 => Some(Self::ImaAdpcm),
+            8 => Some(Self::Vag),
+            9 => Some(Self::Hevag),
+            10 => Some(Self::Xma),
+            11 => Some(Self::Mpeg),
+            12 => Some(Self::Celt),
+            13 => Some(Self::At9),
+            14 => Some(Self::Xwma),
+            15 => Some(Self::Vorbis),
+            _ => None,
         }
     }
 
@@ -47,14 +73,22 @@ impl Codec {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Encryption { None, Aes, Fsbext }
+pub enum Encryption {
+    None,
+    Aes,
+    Fsbext,
+}
 
 #[derive(Debug, Clone, Copy)]
 pub struct Fsb4Mode(pub u32);
 
 impl Fsb4Mode {
-    pub fn is_stereo(&self) -> bool { self.0 & 0x00400000 != 0 }
-    pub fn has_loop_points(&self) -> bool { self.0 & 0x00000008 != 0 }
+    pub fn is_stereo(&self) -> bool {
+        self.0 & 0x00400000 != 0
+    }
+    pub fn has_loop_points(&self) -> bool {
+        self.0 & 0x00000008 != 0
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -75,7 +109,11 @@ pub struct Sample {
 
 impl Sample {
     pub fn duration(&self) -> f64 {
-        if self.frequency > 0 { self.samples as f64 / self.frequency as f64 } else { 0.0 }
+        if self.frequency > 0 {
+            self.samples as f64 / self.frequency as f64
+        } else {
+            0.0
+        }
     }
 }
 
@@ -157,7 +195,9 @@ impl FsbBank {
             let _entry_size = cursor.read_u16::<LittleEndian>()?;
             let mut name_bytes = [0u8; 30];
             cursor.read_exact(&mut name_bytes)?;
-            let name = String::from_utf8_lossy(&name_bytes).trim_end_matches('\0').to_string();
+            let name = String::from_utf8_lossy(&name_bytes)
+                .trim_end_matches('\0')
+                .to_string();
 
             let sample_count_field = cursor.read_u32::<LittleEndian>()?;
             let compressed_size = cursor.read_u32::<LittleEndian>()?;
@@ -175,8 +215,16 @@ impl FsbBank {
                 samples: sample_count_field as u64,
                 data_offset: current_data_offset,
                 data_size: compressed_size as u64,
-                loop_start: if mode.has_loop_points() { Some(loop_start) } else { None },
-                loop_end: if mode.has_loop_points() { Some(loop_end) } else { None },
+                loop_start: if mode.has_loop_points() {
+                    Some(loop_start)
+                } else {
+                    None
+                },
+                loop_end: if mode.has_loop_points() {
+                    Some(loop_end)
+                } else {
+                    None
+                },
                 vorbis_crc: None,
                 vorbis_seek_table: None,
                 mode: Some(mode),
@@ -184,7 +232,11 @@ impl FsbBank {
             current_data_offset += compressed_size as u64;
         }
 
-        let codec = if flags & 0x00200000 != 0 { Codec::Mpeg } else { Codec::Pcm16 };
+        let codec = if flags & 0x00200000 != 0 {
+            Codec::Mpeg
+        } else {
+            Codec::Pcm16
+        };
 
         Ok(FsbBank {
             version: Version::Fsb4,
@@ -220,7 +272,15 @@ impl FsbBank {
             Encryption::Fsbext => crypto::fsbext_decrypt(&mut data, FSB_KEY),
         }
 
-        let (sample_count, sample_headers_size, name_table_size, data_size, codec_raw, fsb5_mode, flags) = {
+        let (
+            sample_count,
+            sample_headers_size,
+            name_table_size,
+            data_size,
+            codec_raw,
+            fsb5_mode,
+            flags,
+        ) = {
             let mut cursor = Cursor::new(&data);
             cursor.seek(SeekFrom::Start(4))?;
             let _version = cursor.read_u32::<LittleEndian>()?;
@@ -238,7 +298,8 @@ impl FsbBank {
         let codec = Codec::from_u32(codec_raw)
             .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "Unknown codec"))?;
 
-        let data_offset = FSB5_HEADER_SIZE as u64 + sample_headers_size as u64 + name_table_size as u64;
+        let data_offset =
+            FSB5_HEADER_SIZE as u64 + sample_headers_size as u64 + name_table_size as u64;
 
         if encryption == Encryption::Aes {
             let start = data_offset as usize;
@@ -289,7 +350,9 @@ impl FsbBank {
                         _ => {}
                     }
                     cursor.seek(SeekFrom::Start(chunk_start + chunk_size as u64))?;
-                    if !more_chunks { break; }
+                    if !more_chunks {
+                        break;
+                    }
                 }
             }
 
@@ -330,7 +393,9 @@ impl FsbBank {
                 let mut name_bytes = Vec::new();
                 loop {
                     let b = cursor.read_u8()?;
-                    if b == 0 { break; }
+                    if b == 0 {
+                        break;
+                    }
                     name_bytes.push(b);
                 }
                 if let Ok(name) = String::from_utf8(name_bytes) {
@@ -355,12 +420,17 @@ impl FsbBank {
     }
 
     pub fn sample_data(&self, index: usize) -> io::Result<&[u8]> {
-        let sample = self.samples.get(index)
+        let sample = self
+            .samples
+            .get(index)
             .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "Sample not found"))?;
         let start = sample.data_offset as usize;
         let end = start + sample.data_size as usize;
         if end > self.data.len() {
-            return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "Sample data out of bounds"));
+            return Err(io::Error::new(
+                io::ErrorKind::UnexpectedEof,
+                "Sample data out of bounds",
+            ));
         }
         Ok(&self.data[start..end])
     }
@@ -406,7 +476,11 @@ impl FsbBank {
             output.write_u32::<LittleEndian>(sample.loop_end.unwrap_or(sample.samples as u32))?;
 
             let mode = sample.mode.map(|m| m.0).unwrap_or_else(|| {
-                if sample.channels == 2 { 0x00400000 } else { 0x00020000 }
+                if sample.channels == 2 {
+                    0x00400000
+                } else {
+                    0x00020000
+                }
             });
             output.write_u32::<LittleEndian>(mode)?;
             output.write_u32::<LittleEndian>(sample.frequency)?;
@@ -439,7 +513,9 @@ impl FsbBank {
         let mut sample_data_offsets = Vec::new();
 
         for sample in &self.samples {
-            while audio_data.len() % 32 != 0 { audio_data.push(0); }
+            while audio_data.len() % 32 != 0 {
+                audio_data.push(0);
+            }
             sample_data_offsets.push(audio_data.len() as u64);
             let start = sample.data_offset as usize;
             let end = start + sample.data_size as usize;
@@ -447,7 +523,9 @@ impl FsbBank {
                 audio_data.extend_from_slice(&self.data[start..end]);
             }
         }
-        while audio_data.len() % 32 != 0 { audio_data.push(0); }
+        while audio_data.len() % 32 != 0 {
+            audio_data.push(0);
+        }
 
         let mut sample_headers = Vec::new();
         for (i, sample) in self.samples.iter().enumerate() {
@@ -457,7 +535,9 @@ impl FsbBank {
             let channels_bit = if sample.channels > 1 { 1u64 } else { 0u64 };
 
             let mut mode: u64 = 0;
-            if has_chunks { mode |= 1; }
+            if has_chunks {
+                mode |= 1;
+            }
             mode |= (freq_index as u64 & 0xF) << 1;
             mode |= channels_bit << 5;
             mode |= (data_offset & 0x0FFFFFFF) << 6;
@@ -468,7 +548,8 @@ impl FsbBank {
                 let has_vorbis = sample.vorbis_crc.is_some();
 
                 if let (Some(start), Some(end)) = (sample.loop_start, sample.loop_end) {
-                    let chunk_header: u32 = (if has_vorbis { 1 } else { 0 }) | (8u32 << 1) | (3u32 << 25);
+                    let chunk_header: u32 =
+                        (if has_vorbis { 1 } else { 0 }) | (8u32 << 1) | (3u32 << 25);
                     sample_headers.extend_from_slice(&chunk_header.to_le_bytes());
                     sample_headers.extend_from_slice(&start.to_le_bytes());
                     sample_headers.extend_from_slice(&end.to_le_bytes());
@@ -477,7 +558,8 @@ impl FsbBank {
                 if let Some(crc) = sample.vorbis_crc {
                     let seek_table = sample.vorbis_seek_table.as_ref();
                     let chunk_data_size = 4 + seek_table.map(|t| t.len() * 4).unwrap_or(0);
-                    let chunk_header: u32 = ((chunk_data_size as u32 & 0xFFFFFF) << 1) | (11u32 << 25);
+                    let chunk_header: u32 =
+                        ((chunk_data_size as u32 & 0xFFFFFF) << 1) | (11u32 << 25);
                     sample_headers.extend_from_slice(&chunk_header.to_le_bytes());
                     sample_headers.extend_from_slice(&crc.to_le_bytes());
                     if let Some(table) = seek_table {
@@ -524,7 +606,9 @@ impl FsbBank {
             match self.encryption {
                 Encryption::None | Encryption::Aes => {
                     crypto::encrypt_aes_block(&mut output[0..32], FSB_KEY);
-                    let data_offset = FSB5_HEADER_SIZE + new_sample_headers_size as usize + self.name_table_size as usize;
+                    let data_offset = FSB5_HEADER_SIZE
+                        + new_sample_headers_size as usize
+                        + self.name_table_size as usize;
                     let data_end = data_offset + new_data_size as usize;
                     if data_end <= output.len() {
                         crypto::encrypt_aes_data(&mut output[data_offset..data_end], FSB_KEY);
@@ -544,7 +628,9 @@ impl FsbBank {
         if self.codec != Codec::Mpeg {
             return Err(io::Error::new(io::ErrorKind::InvalidData, "Not MPEG codec"));
         }
-        let sample = self.samples.get(index)
+        let sample = self
+            .samples
+            .get(index)
             .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "Sample not found"))?;
         crate::audio::mp3::extract_mp3_from_fsb4(
             self.sample_data(index)?,
@@ -560,22 +646,41 @@ impl FsbBank {
             Codec::Pcm16 => {
                 let sample = &self.samples[index];
                 let raw = self.sample_data(index)?;
-                Ok((create_wav_header(raw, sample.frequency, sample.channels as u16, 16), "wav"))
+                Ok((
+                    create_wav_header(raw, sample.frequency, sample.channels as u16, 16),
+                    "wav",
+                ))
             }
-            _ => Ok((self.sample_data(index)?.to_vec(), "bin"))
+            _ => Ok((self.sample_data(index)?.to_vec(), "bin")),
         }
     }
 
-    pub fn replace_sample<P: AsRef<Path>>(&mut self, index: usize, audio_path: P, temp_dir: P) -> io::Result<()> {
+    pub fn replace_sample<P: AsRef<Path>>(
+        &mut self,
+        index: usize,
+        audio_path: P,
+        temp_dir: P,
+    ) -> io::Result<()> {
         match self.version {
             Version::Fsb4 => self.replace_sample_fsb4(index, audio_path, temp_dir),
-            Version::Fsb5 => Err(io::Error::new(io::ErrorKind::InvalidData, "Use replace_sample_fsb5 for FSB5")),
+            Version::Fsb5 => Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Use replace_sample_fsb5 for FSB5",
+            )),
         }
     }
 
-    fn replace_sample_fsb4<P: AsRef<Path>>(&mut self, index: usize, audio_path: P, temp_dir: P) -> io::Result<()> {
+    fn replace_sample_fsb4<P: AsRef<Path>>(
+        &mut self,
+        index: usize,
+        audio_path: P,
+        temp_dir: P,
+    ) -> io::Result<()> {
         if index >= self.samples.len() {
-            return Err(io::Error::new(io::ErrorKind::NotFound, "Sample index out of bounds"));
+            return Err(io::Error::new(
+                io::ErrorKind::NotFound,
+                "Sample index out of bounds",
+            ));
         }
 
         let temp_dir = temp_dir.as_ref();
@@ -611,13 +716,28 @@ impl FsbBank {
 
 fn frequency_to_index(freq: u32) -> usize {
     match freq {
-        4000 => 0, 8000 => 1, 11000 => 2, 11025 => 3, 16000 => 4, 22050 => 5,
-        24000 => 6, 32000 => 7, 44100 => 8, 48000 => 9, 96000 => 10, 192000 => 11,
+        4000 => 0,
+        8000 => 1,
+        11000 => 2,
+        11025 => 3,
+        16000 => 4,
+        22050 => 5,
+        24000 => 6,
+        32000 => 7,
+        44100 => 8,
+        48000 => 9,
+        96000 => 10,
+        192000 => 11,
         _ => 8,
     }
 }
 
-fn create_wav_header(pcm_data: &[u8], sample_rate: u32, channels: u16, bits_per_sample: u16) -> Vec<u8> {
+fn create_wav_header(
+    pcm_data: &[u8],
+    sample_rate: u32,
+    channels: u16,
+    bits_per_sample: u16,
+) -> Vec<u8> {
     let byte_rate = sample_rate * channels as u32 * (bits_per_sample as u32 / 8);
     let block_align = channels * (bits_per_sample / 8);
     let data_size = pcm_data.len() as u32;
@@ -643,21 +763,37 @@ fn create_wav_header(pcm_data: &[u8], sample_rate: u32, channels: u16, bits_per_
 
 fn prepare_mp3_data<P: AsRef<Path>>(audio_path: P, temp_dir: P) -> io::Result<Vec<u8>> {
     let audio_path = audio_path.as_ref();
-    let ext = audio_path.extension().and_then(|e| e.to_str()).unwrap_or("").to_lowercase();
+    let ext = audio_path
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("")
+        .to_lowercase();
 
     if ext == "mp3" {
         return std::fs::read(audio_path);
     }
 
     let temp_mp3 = temp_dir.as_ref().join("converted.mp3");
-    let ffmpeg = find_ffmpeg().ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "FFmpeg not found"))?;
+    let ffmpeg =
+        find_ffmpeg().ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "FFmpeg not found"))?;
 
     let output = Command::new(&ffmpeg)
-        .args(["-y", "-i", &audio_path.to_string_lossy(), "-acodec", "libmp3lame", "-ab", "192k", "-ar", "44100", &temp_mp3.to_string_lossy()])
+        .args([
+            "-y",
+            "-i",
+            &audio_path.to_string_lossy(),
+            "-acodec",
+            "libmp3lame",
+            "-ab",
+            "192k",
+            "-ar",
+            "44100",
+            &temp_mp3.to_string_lossy(),
+        ])
         .output()?;
 
     if !output.status.success() {
-        return Err(io::Error::new(io::ErrorKind::Other, "FFmpeg conversion failed"));
+        return Err(io::Error::other("FFmpeg conversion failed"));
     }
 
     let data = std::fs::read(&temp_mp3)?;
@@ -669,7 +805,9 @@ fn find_ffmpeg() -> Option<std::path::PathBuf> {
     if let Ok(exe_path) = std::env::current_exe() {
         if let Some(exe_dir) = exe_path.parent() {
             let local = exe_dir.join("ffmpeg.exe");
-            if local.exists() { return Some(local); }
+            if local.exists() {
+                return Some(local);
+            }
         }
     }
     if Command::new("ffmpeg").arg("-version").output().is_ok() {

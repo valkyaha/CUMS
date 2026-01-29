@@ -1,8 +1,12 @@
-use std::io::{self, Cursor, Read};
 use byteorder::{BigEndian, ReadBytesExt};
+use std::io::{self, Cursor, Read};
 
-const BITRATES_V1_L3: [u32; 16] = [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 0];
-const BITRATES_V2_L3: [u32; 16] = [0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, 0];
+const BITRATES_V1_L3: [u32; 16] = [
+    0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 0,
+];
+const BITRATES_V2_L3: [u32; 16] = [
+    0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, 0,
+];
 const SAMPLE_RATES: [[u32; 4]; 4] = [
     [11025, 12000, 8000, 0],
     [0, 0, 0, 0],
@@ -26,7 +30,9 @@ pub struct Mp3FrameHeader {
 
 impl Mp3FrameHeader {
     pub fn parse(header: u32) -> Option<Self> {
-        if (header >> 21) != 0x7FF { return None; }
+        if (header >> 21) != 0x7FF {
+            return None;
+        }
 
         let version = ((header >> 19) & 0x03) as u8;
         let layer = ((header >> 17) & 0x03) as u8;
@@ -36,7 +42,12 @@ impl Mp3FrameHeader {
         let padding = ((header >> 9) & 0x01) == 1;
         let channel_mode = ((header >> 6) & 0x03) as u8;
 
-        if version == 1 || layer == 0 || bitrate_index == 0 || bitrate_index == 15 || sample_rate_index == 3 {
+        if version == 1
+            || layer == 0
+            || bitrate_index == 0
+            || bitrate_index == 15
+            || sample_rate_index == 3
+        {
             return None;
         }
 
@@ -53,7 +64,9 @@ impl Mp3FrameHeader {
         };
 
         let sample_rate = SAMPLE_RATES[version as usize][sample_rate_index as usize];
-        if sample_rate == 0 { return None; }
+        if sample_rate == 0 {
+            return None;
+        }
 
         let frame_size = if layer == 3 {
             let coefficient = if version == 3 { 144 } else { 72 };
@@ -63,8 +76,16 @@ impl Mp3FrameHeader {
         };
 
         Some(Mp3FrameHeader {
-            version, layer, crc, bitrate_index, sample_rate_index,
-            padding, channel_mode, frame_size, bitrate, sample_rate,
+            version,
+            layer,
+            crc,
+            bitrate_index,
+            sample_rate_index,
+            padding,
+            channel_mode,
+            frame_size,
+            bitrate,
+            sample_rate,
         })
     }
 
@@ -81,7 +102,11 @@ impl Mp3FrameHeader {
     }
 }
 
-pub fn extract_mp3_from_fsb4(data: &[u8], _sample_rate: u32, _channels: u32) -> io::Result<Vec<u8>> {
+pub fn extract_mp3_from_fsb4(
+    data: &[u8],
+    _sample_rate: u32,
+    _channels: u32,
+) -> io::Result<Vec<u8>> {
     let mut output = Vec::new();
     let mut cursor = Cursor::new(data);
     let data_len = data.len();
@@ -142,13 +167,17 @@ pub fn extract_fsb4_mp3_fmod(data: &[u8], channels: u32) -> io::Result<Vec<u8>> 
 }
 
 pub fn has_valid_mp3_frames(data: &[u8]) -> bool {
-    if data.len() < 4 { return false; }
+    if data.len() < 4 {
+        return false;
+    }
     let header = u32::from_be_bytes([data[0], data[1], data[2], data[3]]);
     Mp3FrameHeader::parse(header).is_some()
 }
 
 pub fn get_mp3_info(data: &[u8]) -> Option<(u32, u32, u32)> {
-    if data.len() < 4 { return None; }
+    if data.len() < 4 {
+        return None;
+    }
 
     for i in 0..data.len().saturating_sub(4) {
         let header = u32::from_be_bytes([data[i], data[i + 1], data[i + 2], data[i + 3]]);

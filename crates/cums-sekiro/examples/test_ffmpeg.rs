@@ -1,5 +1,5 @@
-use std::process::Command;
 use std::path::PathBuf;
+use std::process::Command;
 
 fn find_ffmpeg() -> Option<PathBuf> {
     // First try PATH
@@ -24,10 +24,8 @@ fn find_ffmpeg() -> Option<PathBuf> {
                     println!("  Checking: {:?}", path);
                     if path.is_dir() {
                         // Look for ffmpeg in subdirectories
-                        let ffmpeg_candidates = [
-                            path.join("bin").join("ffmpeg.exe"),
-                            path.join("ffmpeg.exe"),
-                        ];
+                        let ffmpeg_candidates =
+                            [path.join("bin").join("ffmpeg.exe"), path.join("ffmpeg.exe")];
 
                         // Also search one level deeper (for versioned folders)
                         if let Ok(sub_entries) = std::fs::read_dir(&path) {
@@ -69,14 +67,18 @@ fn main() {
             println!("\nFFmpeg found at: {:?}", path);
 
             // Test it
-            let output = Command::new(&path)
-                .arg("-version")
-                .output();
+            let output = Command::new(&path).arg("-version").output();
 
             match output {
                 Ok(o) => {
                     println!("FFmpeg version output:");
-                    println!("{}", String::from_utf8_lossy(&o.stdout).lines().next().unwrap_or(""));
+                    println!(
+                        "{}",
+                        String::from_utf8_lossy(&o.stdout)
+                            .lines()
+                            .next()
+                            .unwrap_or("")
+                    );
                 }
                 Err(e) => println!("Failed to run ffmpeg: {}", e),
             }

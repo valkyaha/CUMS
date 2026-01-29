@@ -1,4 +1,4 @@
-use cums_sekiro::{FsbBank, Encryption};
+use cums_sekiro::{Encryption, FsbBank};
 use std::fs;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -12,14 +12,35 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("Original size: {} bytes", orig_bytes.len());
     println!("Modified size: {} bytes", mod_bytes.len());
-    println!("Difference: {} bytes\n", mod_bytes.len() as i64 - orig_bytes.len() as i64);
+    println!(
+        "Difference: {} bytes\n",
+        mod_bytes.len() as i64 - orig_bytes.len() as i64
+    );
 
-    println!("Original first 4 bytes: {:02X} {:02X} {:02X} {:02X} ({})",
-        orig_bytes[0], orig_bytes[1], orig_bytes[2], orig_bytes[3],
-        if &orig_bytes[0..4] == b"FSB5" { "FSB5 - NOT encrypted" } else { "encrypted" });
-    println!("Modified first 4 bytes: {:02X} {:02X} {:02X} {:02X} ({})\n",
-        mod_bytes[0], mod_bytes[1], mod_bytes[2], mod_bytes[3],
-        if &mod_bytes[0..4] == b"FSB5" { "FSB5 - NOT encrypted" } else { "encrypted" });
+    println!(
+        "Original first 4 bytes: {:02X} {:02X} {:02X} {:02X} ({})",
+        orig_bytes[0],
+        orig_bytes[1],
+        orig_bytes[2],
+        orig_bytes[3],
+        if &orig_bytes[0..4] == b"FSB5" {
+            "FSB5 - NOT encrypted"
+        } else {
+            "encrypted"
+        }
+    );
+    println!(
+        "Modified first 4 bytes: {:02X} {:02X} {:02X} {:02X} ({})\n",
+        mod_bytes[0],
+        mod_bytes[1],
+        mod_bytes[2],
+        mod_bytes[3],
+        if &mod_bytes[0..4] == b"FSB5" {
+            "FSB5 - NOT encrypted"
+        } else {
+            "encrypted"
+        }
+    );
 
     println!("Loading original...");
     let orig = FsbBank::load(orig_path)?;
@@ -84,7 +105,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("  0x{:08X} - NEW!", crc);
             for (i, s) in modded.samples.iter().enumerate() {
                 if s.vorbis_crc == Some(*crc) {
-                    println!("    -> Sample {}: {:?} ({}Hz {}ch)", i, s.name, s.frequency, s.channels);
+                    println!(
+                        "    -> Sample {}: {:?} ({}Hz {}ch)",
+                        i, s.name, s.frequency, s.channels
+                    );
                 }
             }
         }
@@ -96,7 +120,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("  0x{:08X} - REMOVED", crc);
             for (i, s) in orig.samples.iter().enumerate() {
                 if s.vorbis_crc == Some(*crc) {
-                    println!("    -> Was Sample {}: {:?} ({}Hz {}ch)", i, s.name, s.frequency, s.channels);
+                    println!(
+                        "    -> Was Sample {}: {:?} ({}Hz {}ch)",
+                        i, s.name, s.frequency, s.channels
+                    );
                 }
             }
         }
@@ -124,9 +151,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     for i in 0..orig.samples.len().min(modded.samples.len()) {
         let os = &orig.samples[i];
         let ms = &modded.samples[i];
-        if os.vorbis_crc != ms.vorbis_crc || os.data_size != ms.data_size || os.samples != ms.samples {
+        if os.vorbis_crc != ms.vorbis_crc
+            || os.data_size != ms.data_size
+            || os.samples != ms.samples
+        {
             println!("Sample {} ({:?}):", i, ms.name);
-            println!("  CRC: 0x{:08X} -> 0x{:08X}", os.vorbis_crc.unwrap_or(0), ms.vorbis_crc.unwrap_or(0));
+            println!(
+                "  CRC: 0x{:08X} -> 0x{:08X}",
+                os.vorbis_crc.unwrap_or(0),
+                ms.vorbis_crc.unwrap_or(0)
+            );
             println!("  Size: {} -> {}", os.data_size, ms.data_size);
             println!("  Samples: {} -> {}", os.samples, ms.samples);
         }

@@ -2,20 +2,24 @@ use cums_sekiro::{FsbBank, FSB_KEY};
 
 fn fsbdec(t: u8) -> u8 {
     let t = t as u32;
-    ((((((((t & 64) | (t >> 2)) >> 2) | (t & 32)) >> 2) |
-        (t & 16)) >> 1) | (((((((t & 2) | (t << 2)) << 2) |
-        (t & 4)) << 2) | (t & 8)) << 1)) as u8
+    ((((((((t & 64) | (t >> 2)) >> 2) | (t & 32)) >> 2) | (t & 16)) >> 1)
+        | (((((((t & 2) | (t << 2)) << 2) | (t & 4)) << 2) | (t & 8)) << 1)) as u8
 }
 
 fn main() {
     println!("=== Round-trip test ===\n");
 
     let bank = FsbBank::load(r"G:\SteamLibrary\steamapps\common\Sekiro\sound\smain.fsb").unwrap();
-    bank.save(r"G:\SteamLibrary\steamapps\common\Sekiro\mods\sound\smain_test.fsb", true).unwrap();
+    bank.save(
+        r"G:\SteamLibrary\steamapps\common\Sekiro\mods\sound\smain_test.fsb",
+        true,
+    )
+    .unwrap();
     println!("Saved test file\n");
 
     let orig = std::fs::read(r"G:\SteamLibrary\steamapps\common\Sekiro\sound\smain.fsb").unwrap();
-    let test = std::fs::read(r"G:\SteamLibrary\steamapps\common\Sekiro\mods\sound\smain_test.fsb").unwrap();
+    let test = std::fs::read(r"G:\SteamLibrary\steamapps\common\Sekiro\mods\sound\smain_test.fsb")
+        .unwrap();
 
     println!("Original: {} bytes", orig.len());
     println!("Test:     {} bytes", test.len());
@@ -26,7 +30,7 @@ fn main() {
     }
 
     let mut diffs = 0;
-    for (_i, (a, b)) in orig.iter().zip(test.iter()).enumerate() {
+    for (a, b) in orig.iter().zip(test.iter()) {
         if a != b {
             diffs += 1;
         }
