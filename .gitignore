@@ -34,3 +34,7 @@ config.toml
 
 # Logs
 *.log
+
+# Claude Code
+CLAUDE.md
+.claude/
