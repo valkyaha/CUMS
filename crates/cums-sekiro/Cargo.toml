@@ -1,0 +1,31 @@
+[package]
+name = "cums-sekiro"
+version = "0.1.0"
+edition = "2021"
+description = "Audio modding library for FromSoftware games (Dark Souls 1/2/3, Sekiro)"
+
+[dependencies]
+# Binary parsing
+byteorder = "1.5"
+
+# Encryption
+aes = "0.8"
+
+# Compression (DCX)
+flate2 = "1.0"
+
+# Error handling
+thiserror = "1.0"
+
+# OGG/Vorbis rebuilding
+ogg = "0.9"
+
+# JSON parsing for vorbis headers
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Base64 decoding
+base64 = "0.22"
+
+# Lazy initialization
+once_cell = "1.19"

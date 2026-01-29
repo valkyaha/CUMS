@@ -1,0 +1,29 @@
+[package]
+name = "cums-gui"
+version = "0.1.0"
+edition = "2021"
+description = "CUMS - Custom Unified Music and Sounds for FromSoftware games"
+
+[[bin]]
+name = "cums"
+path = "src/main.rs"
+
+[dependencies]
+# Sekiro codec
+cums-sekiro = { path = "../cums-sekiro" }
+
+# GUI
+eframe = { version = "0.30", default-features = false, features = [
+    "default_fonts",
+    "glow",
+] }
+egui = "0.30"
+egui_extras = { version = "0.30", features = ["all_loaders"] }
+rfd = "0.15"         # File dialogs
+
+# Audio playback
+rodio = { version = "0.19", default-features = false, features = ["wav", "vorbis", "mp3"] }
+
+# Utils
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
